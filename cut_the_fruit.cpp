@@ -2,6 +2,7 @@
 #include<fstream>
 #include<sstream>
 #include<string>
+#include<cstdlib>
 using namespace std;
 
 string filename;
@@ -71,6 +72,14 @@ time operator-(time a, time b)
 	return c;
 }
 
+int findpoint(string s)
+{
+    for (int i = 0;i < s.size();i++)
+        if (s[i] == '.')
+            return i;
+    return -1;
+}
+
 bool calctime()
 {
 	time head(start);
@@ -86,20 +95,47 @@ bool calctime()
 	return false;
 }
 
+string rename(string s)
+{
+    string t(s, 0, s.size() - 4);
+    t += ".wav";
+    return t;
+}
+
 int main ()
 {
 	cout << "请输入要分割的音频文件名：" << endl;
 	cin >> filename;
 	cout << "请输入分割指令所在文件名：" << endl;
 	cin >> dataname;
-	dataname += ".txt";
+
 	ifstream fin;
 	fin.open(dataname.c_str());
 	while (fin >> resultname >> start >> end)
 	{
 		cout << resultname << " " << start << " " << end << endl;
 		getline(fin, dungod);
-		cout << dungod << endl;
+		int pos = findpoint(filename);
+		if (pos <= 0)
+		{
+            cout << "音频文件名错误，请输入含扩展名的全名。" << endl;
+            break;
+		}
+		if (filename.substr(filename.size() - 4, filename.size()) != ".wav")
+		{
+		    stringstream ss;
+		    ss << "ffmpeg -i " << filename << " -ac 1 -ar 16000 -acodec pcm_s16le -f wav " << rename(filename);
+		    system(ss.str().c_str());
+		    cout << filename << "不是wav格式，已成功自动转换。" << endl;
+		    filename = rename(filename);
+		}
+		else
+		{
+		    stringstream ss;
+		    ss << "ffmpeg -i " << filename << " -ac 1 -ar 16000 -acodec pcm_s16le " << filename;
+		    system(ss.str().c_str());
+		    cout << filename << "已成功自动转换为规定格式。" << endl;
+		}
 		if (calctime())
 		{
 			stringstream ss;
@@ -107,8 +143,9 @@ int main ()
 			system(ss.str().c_str());
 			succ++;
 			cout << resultname << "输出成功！" <<endl;
+
 		}
-		else 
+		else
 		{
 			fail++;
 			cout << resultname << "输出失败！" <<endl;
